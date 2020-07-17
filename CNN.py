@@ -1,10 +1,6 @@
-# coding: utf-8
-import os
-import sys
 import pickle
 from collections import OrderedDict
 from common.layers import *
-from common.gradient import numerical_gradient
 
 
 class SimpleConvNet:
@@ -23,22 +19,18 @@ class SimpleConvNet:
         conv_output_size = (input_size - filter_size + 2 * filter_pad) / filter_stride + 1
         pool_output_size = int(filter_num * (conv_output_size / 2) * (conv_output_size / 2))
 
-        # 重みの初期化
+        # Init W
         self.params = {}
-        self.params['W1'] = weight_init_std * \
-                            np.random.randn(filter_num, input_dim[0], filter_size, filter_size)
+        self.params['W1'] = weight_init_std * np.random.randn(filter_num, input_dim[0], filter_size, filter_size)
         self.params['b1'] = np.zeros(filter_num)
-        self.params['W2'] = weight_init_std * \
-                            np.random.randn(pool_output_size, hidden_size)
+        self.params['W2'] = weight_init_std * np.random.randn(pool_output_size, hidden_size)
         self.params['b2'] = np.zeros(hidden_size)
-        self.params['W3'] = weight_init_std * \
-                            np.random.randn(hidden_size, output_size)
+        self.params['W3'] = weight_init_std * np.random.randn(hidden_size, output_size)
         self.params['b3'] = np.zeros(output_size)
 
-        # レイヤの生成
+        # Init layer
         self.layers = OrderedDict()
-        self.layers['Conv1'] = Convolution(self.params['W1'], self.params['b1'],
-                                           conv_param['stride'], conv_param['pad'])
+        self.layers['Conv1'] = Convolution(self.params['W1'], self.params['b1'], conv_param['stride'], conv_param['pad'])
         self.layers['Relu1'] = Relu()
         self.layers['Pool1'] = Pooling(pool_h=2, pool_w=2, stride=2)
         self.layers['Affine1'] = Affine(self.params['W2'], self.params['b2'])
@@ -54,9 +46,6 @@ class SimpleConvNet:
         return x
 
     def loss(self, x, t):
-        """損失関数を求める
-        引数のxは入力データ、tは教師ラベル
-        """
         y = self.predict(x)
         return self.last_layer.forward(y, t)
 
@@ -74,42 +63,9 @@ class SimpleConvNet:
 
         return acc / x.shape[0]
 
-    def numerical_gradient(self, x, t):
-        """勾配を求める（数値微分）
-
-        Parameters
-        ----------
-        x : 入力データ
-        t : 教師ラベル
-
-        Returns
-        -------
-        各層の勾配を持ったディクショナリ変数
-            grads['W1']、grads['W2']、...は各層の重み
-            grads['b1']、grads['b2']、...は各層のバイアス
-        """
-        loss_w = lambda w: self.loss(x, t)
-
-        grads = {}
-        for idx in (1, 2, 3):
-            grads['W' + str(idx)] = numerical_gradient(loss_w, self.params['W' + str(idx)])
-            grads['b' + str(idx)] = numerical_gradient(loss_w, self.params['b' + str(idx)])
-
-        return grads
-
     def gradient(self, x, t):
-        """勾配を求める（誤差逆伝搬法）
-
-        Parameters
-        ----------
-        x : 入力データ
-        t : 教師ラベル
-
-        Returns
-        -------
-        各層の勾配を持ったディクショナリ変数
-            grads['W1']、grads['W2']、...は各層の重み
-            grads['b1']、grads['b2']、...は各層のバイアス
+        """
+        Calculate gradient from back propagation.
         """
         # forward
         self.loss(x, t)
@@ -123,7 +79,6 @@ class SimpleConvNet:
         for layer in layers:
             dout = layer.backward(dout)
 
-        # 設定
         grads = {}
         grads['W1'], grads['b1'] = self.layers['Conv1'].dW, self.layers['Conv1'].db
         grads['W2'], grads['b2'] = self.layers['Affine1'].dW, self.layers['Affine1'].db
