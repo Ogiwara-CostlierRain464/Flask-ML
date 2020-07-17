@@ -11,9 +11,7 @@ def img_show(image):
 
 (x_train, t_train), (x_test, t_test) = load_mnist(flatten=True, normalize=False)
 
-img = x_train[0]
-label = t_train[0]
-print(label)  # 5
+img = x_test[0:1]
 
 print(img.shape)  # (784,)
 img = img.reshape(28, 28)  # 形状を元の画像サイズに変形
