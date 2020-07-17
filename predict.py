@@ -9,4 +9,6 @@ network.load_params("params.pkl")
 
 (x_train, t_train), (x_test, t_test) = load_mnist(flatten=False)
 
+print(x_train[0:1].shape)
+
 print(network.predict(x_test[0:1]).argmax(axis=1))
