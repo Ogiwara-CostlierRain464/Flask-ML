@@ -5,10 +5,11 @@ import threading
 from PIL import Image
 from io import BytesIO
 import numpy as np
+import sys
 
 from CNN import SimpleConvNet
 
-UPLOAD_FOLDER = "./uploads"
+upload_folder = "./uploads"
 ALLOWED_EXTENSIONS = {"png", "jpg", "gif"}
 
 
@@ -17,7 +18,6 @@ def allowed_file(filename: str):
 
 
 app = Flask(__name__)
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 uploaded_file_path = None
 ml_thread = None
@@ -38,7 +38,7 @@ def upload_file():
             global uploaded_file_path
 
             filename = secure_filename(file.filename)
-            uploaded_file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            uploaded_file_path = os.path.join(upload_folder, filename)
             file.save(uploaded_file_path)
 
             return redirect("/cnn")
@@ -66,12 +66,11 @@ def cnn_predict():
 
     img = np.array(Image.open(uploaded_file_path))
     img = img.astype(np.float32)
+
     img /= 255.0
     img = img.reshape((1, 28, 28))
 
-    network = SimpleConvNet(input_dim=(1, 28, 28),
-                            conv_param={'filter_num': 30, 'filter_size': 5, 'pad': 0, 'stride': 1},
-                            hidden_size=100, output_size=10, weight_init_std=0.01)
+    network = SimpleConvNet()
 
     network.load_params("params.pkl")
     result = network.predict(img[np.newaxis]).argmax(axis=1)
@@ -108,4 +107,11 @@ def cnn():
         return f"result: {result}"
 
 
-app.run()
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        upload_folder = "./uploads"
+    else:
+        upload_folder = sys.argv[1]
+
+    print(f"UPLOAD FOLDER: {upload_folder}")
+    app.run()
